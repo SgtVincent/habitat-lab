@@ -360,14 +360,6 @@ def get_arg_parser():
     )
     return parser
 
-"""
-!python -m habitat.datasets.rearrange.run_episode_generator --run\
---config /home/xunzhe/zhouxunzhe/habitat-lab/data/all_object_receptacle_dataset.yaml\
---num-episodes 40\
---out data/datasets/manipulation/manipulation_eval_fetch.json.gz\
---type manipulation\
---resume habitat-mas/habitat_mas/data/robot_resume/FetchRobot_default.json
-"""
 
 if __name__ == "__main__":
     parser = get_arg_parser()

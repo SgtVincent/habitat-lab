@@ -4,10 +4,12 @@ defaults:
   - /habitat: habitat_config_base
   - /habitat/task: task_config_base
 
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: StretchRobot_default
+  - /habitat/simulator/sensor_setups@habitat.simulator.agents.agent_0: spot_default
+  # - /habitat/simulator/sensor_setups@habitat.simulator.agents.agent_1: drone_high
+  - /habitat/simulator/agents@habitat.simulator.agents.agent_0: spot
+  - /habitat/simulator/agents@habitat.simulator.agents.agent_1: drone_high
 
-  - /habitat/dataset/rearrangement: zxz_fe_st
+  - /habitat/dataset/rearrangement: hssd
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_action: oracle_arm_action
   - /habitat/task/actions@habitat.task.actions.agent_0_base_velocity: base_velocity_non_cylinder
@@ -43,7 +45,6 @@ defaults:
     - target_goal_gps_compass_sensor
     - localization_sensor
     - other_agent_gps
-    - detected_objects_sensor
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
   - _self_
@@ -76,7 +77,7 @@ habitat:
         end_on_collide: True
         collide_penalty: 0.5
     task_spec_base_path: benchmark/multi_agent/
-    task_spec: pddl/zxz_fetch_stretch_nav
+    task_spec: pddl/drone_spot_rearrange_default
     pddl_domain_def: fp
     actions:
       # agent_0_arm_action:
@@ -114,7 +115,31 @@ habitat:
         allow_back: True
 
     robot_at_thresh: 3.0
-
+  gym:
+    obs_keys:
+      - agent_0_articulated_agent_arm_depth
+      - agent_0_articulated_agent_jaw_depth
+      - agent_0_relative_resting_position
+      - agent_0_obj_start_sensor
+      - agent_0_obj_goal_sensor
+      - agent_0_obj_start_gps_compass
+      - agent_0_obj_goal_gps_compass
+      - agent_0_is_holding
+      - agent_0_ee_pos
+      - agent_0_localization_sensor
+      - agent_0_has_finished_oracle_nav
+      - agent_0_other_agent_gps
+      - agent_0_agents_within_threshold
+      - agent_1_head_depth
+      - agent_1_relative_resting_position
+      - agent_1_obj_start_sensor
+      - agent_1_obj_goal_sensor
+      - agent_1_obj_start_gps_compass
+      - agent_1_obj_goal_gps_compass
+      - agent_1_localization_sensor
+      - agent_1_has_finished_oracle_nav
+      - agent_1_other_agent_gps
+      - agent_1_agents_within_threshold
   environment:
     max_episode_steps: 750
   simulator:
@@ -141,8 +166,4 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/perception/perception_eval.json.gz
-    # new
-    randomize_agent_start: 0
-    robot_config: data/robots/json/perception.json
-    mode: manipulation
+    data_path: data/datasets/hssd/rearrange/{split}/social_rearrange.json.gz

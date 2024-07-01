@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /benchmark/multi_agent: zxz_spot_drone
+  - /benchmark/multi_agent: zxz_fetch_stretch
   - /habitat_baselines: habitat_baselines_rl_config_base
   - /habitat/simulator/sim_sensors@habitat_baselines.eval.extra_sim_sensors.third_rgb_sensor: third_rgb_sensor
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_0.obs_transforms.add_virtual_keys:
@@ -18,36 +18,6 @@ defaults:
     - all_predicates
   - _self_
 
-habitat:
-  # env_task:
-  #   RLTaskEnv
-  gym:
-    obs_keys:
-      - agent_0_articulated_agent_arm_depth
-      - agent_0_relative_resting_position
-      - agent_0_obj_start_sensor
-      - agent_0_obj_goal_sensor
-      - agent_0_obj_start_gps_compass
-      - agent_0_obj_goal_gps_compass
-      - agent_0_is_holding
-      - agent_0_ee_pos
-      - agent_0_localization_sensor
-      - agent_0_has_finished_oracle_nav
-      - agent_0_other_agent_gps
-      - agent_0_agents_within_threshold
-      - agent_1_head_depth
-      - agent_1_relative_resting_position
-      - agent_1_obj_start_sensor
-      - agent_1_obj_goal_sensor
-      - agent_1_obj_start_gps_compass
-      - agent_1_obj_goal_gps_compass
-      - agent_1_is_holding
-      - agent_1_ee_pos
-      - agent_1_localization_sensor
-      - agent_1_has_finished_oracle_nav
-      - agent_1_other_agent_gps
-      - agent_1_agents_within_threshold
-      - all_predicates
 
 habitat_baselines:
   verbose: False
@@ -113,7 +83,7 @@ habitat_baselines:
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
               max_skill_steps: 1500
-            pick: 
+            pick:
               skill_name: "OraclePickPolicy"
               action_name: "arm_action"
               obs_skill_inputs: ["is_holding"]

@@ -83,7 +83,7 @@ habitat_baselines:
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
               max_skill_steps: 1500
-            pick: 
+            pick:
               skill_name: "OraclePickPolicy"
               action_name: "arm_action"
               obs_skill_inputs: ["is_holding"]

@@ -1,0 +1,29 @@
+# The rearrangement task with robot_1 perceives the target object first.
+# Make sure the robot_0 is fetch and the robot_1 is stretch.
+objects:
+  - name: any_targets|0
+    expr_type: movable_entity_type
+  - name: robot_0
+    expr_type: robot_entity_type
+  - name: robot_1
+    expr_type: robot_entity_type
+
+goal:
+  expr_type: AND
+  sub_exprs:
+    - robot_at(any_targets|0, robot_0)
+    - robot_at(any_targets|0, robot_1)
+
+stage_goals:
+  stage_1:
+    expr_type: AND
+    sub_exprs:
+      - robot_at(any_targets|0, robot_0)
+  stage_2:
+    expr_type: AND
+    sub_exprs:
+      - robot_at(any_targets|0, robot_1)
+
+solution:
+  - nav_to_goal(any_targets|0, robot_0)
+  - nav_to_goal(any_targets|0, robot_1)

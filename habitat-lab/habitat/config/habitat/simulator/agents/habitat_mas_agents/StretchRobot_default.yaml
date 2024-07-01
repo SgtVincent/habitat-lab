@@ -2,9 +2,15 @@
 defaults:
   - /habitat/simulator/agents/agent_base@_here_
   - _self_
+  - /habitat/simulator/sim_sensors@sim_sensors.head_rgb_sensor: head_rgb_sensor
+  - /habitat/simulator/sim_sensors@sim_sensors.head_depth_sensor: head_depth_sensor
+  - /habitat/simulator/sim_sensors@sim_sensors.head_semantic_sensor: head_semantic_sensor
+  - /habitat/simulator/sim_sensors@sim_sensors.arm_rgb_sensor: arm_rgb_sensor
+  - /habitat/simulator/sim_sensors@sim_sensors.arm_depth_sensor: arm_depth_sensor
+  - /habitat/simulator/sim_sensors@sim_sensors.arm_semantic_sensor: arm_semantic_sensor
 
 radius: 0.3
-articulated_agent_type: "StretchRobot"
+articulated_agent_type: StretchRobot
 articulated_agent_urdf: data/robots/hab_stretch/urdf/hab_stretch.urdf
 ik_arm_urdf: data/robots/hab_stretch/urdf/hab_stretch_onlyarm.urdf
 arm_len: 8
@@ -13,12 +19,12 @@ sim_sensors:
   head_rgb_sensor:
     height: 640
     width: 480
-    hfov: 43
+    #hfov: 43
   head_depth_sensor:
     height: 640
     width: 480
-    hfov: 43
+    #hfov: 43
   head_semantic_sensor:
     height: 640
     width: 480
-    hfov: 43
+    #hfov: 43
