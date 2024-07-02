@@ -82,6 +82,8 @@ class PddlRobotState:
     place_at_angle_thresh: Optional[float] = None
     base_angle_noise: Optional[float] = None
     filter_colliding_states: Optional[bool] = None
+    #TODO(YCC): add keyword for detected objects
+    detected_object: Optional[PddlEntity] = None
 
     def get_place_at_pos_dist(self, sim_info) -> float:
         if self.place_at_pos_dist is None:
@@ -141,6 +143,26 @@ class PddlRobotState:
                 return False
         elif self.should_drop and grasp_mgr.snap_idx != None:
             return False
+        
+         #TODO: add detected objects checking
+        if self.detected_object is not None:
+            # ename = self.detected_object.name
+            # rom = sim_info.sim.get_rigid_object_manager()
+            # idx = sim_info.obj_ids[ename]
+            # obj = rom.get_object_by_id(sim_info.sim.scene_obj_ids[idx])
+            obj_idx = cast(int, sim_info.search_for_entity(self.detected_object))
+            abs_obj_id = sim_info.sim.scene_obj_ids[obj_idx] + sim_info.sim.habitat_config.object_ids_start
+            # abs_obj_id = sim_info.sim.scene_obj_ids[obj_idx]
+
+            sim_obs = sim_info.sim.get_sensor_observations()
+            observations = sim_info.sim.sensor_suite.get_observations(sim_obs)
+            # episode = sim_info.episode
+            # task = sim_info.env
+            # obs = sim_info.env.sensor_suite.get_observations(observations=observations, episode=episode, task=task)
+            obs = sim_info.env.sensor_suite.get(f"agent_{robot_id}_detected_objects").get_observation(observations)
+
+            if abs_obj_id not in obs:
+                return False
 
         if isinstance(self.pos, PddlEntity):
             targ_pos = sim_info.get_entity_pos(self.pos)
@@ -173,7 +195,7 @@ class PddlRobotState:
                 and np.abs(angle) > self.place_at_angle_thresh
             ):
                 return False
-
+            
         return True
 
     def set_state(

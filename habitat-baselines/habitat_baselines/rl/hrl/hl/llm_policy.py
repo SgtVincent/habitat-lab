@@ -45,7 +45,6 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # Return the initialized agent
         action_list.append(send_request)
         return DummyAgent(agent_name=agent_name, action_list=action_list)
-
         # return CrabAgent(
         #     agent_name,
         #     'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',

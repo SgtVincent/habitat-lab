@@ -141,8 +141,8 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/manipulation/manipulation_eval.json.gz
+    data_path: data/datasets/perception/perception_eval.json.gz
     # new
     randomize_agent_start: 0
-    robot_config: data/robots/json/manipulation.json
-    mode: manipulation
+    robot_config: data/robots/json/perception.json
+    mode: perception

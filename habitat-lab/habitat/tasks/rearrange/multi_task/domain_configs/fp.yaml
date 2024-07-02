@@ -65,6 +65,18 @@ predicates:
         obj_states:
             obj: at_entity
 
+  #TODO(YCC): add new predicates for the rearrangement task.
+  - name: detected_object
+    args:
+      - name: any_targets|1
+        expr_type: movable_entity_type
+      - name: robot_id
+        expr_type: robot_entity_type
+    set_state:
+      robot_states:
+        robot_id:
+          detected_object: any_targets|1
+
 actions:
   - name: nav_to_goal
     parameters:

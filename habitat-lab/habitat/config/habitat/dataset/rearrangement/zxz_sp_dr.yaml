@@ -6,5 +6,5 @@ defaults:
 
 type: RearrangeDataset-v0
 split: eval
-data_path: data/datasets/manipulation/manipulation_eval.json.gz
+data_path: data/datasets/perception/perception_eval.json.gz
 scenes_dir: "data/scene_datasets/hssd-hab"
