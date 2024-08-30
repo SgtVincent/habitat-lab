@@ -128,6 +128,7 @@ class NnSkillPolicy(SkillPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None
     ) -> PolicyActionData:
         filtered_obs = self._get_filtered_obs(observations, cur_batch_idx)
 

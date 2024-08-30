@@ -918,6 +918,16 @@ class RobotResumeSensorConfig(LabSensorConfig):
     robot_resume_dir: str = "robot_resume"
 
 @dataclass
+class VIPInfoSensorConfig(LabSensorConfig):
+    uuid: str = "vip_info"
+    type: str = "VIPInfoSensor"
+
+@dataclass
+class CameraInfoSensorConfig(LabSensorConfig):
+    uuid: str = "camera_info"
+    type: str = "CameraInfoSensor"
+
+@dataclass
 class OtherAgentGpsConfig(LabSensorConfig):
     type: str = "OtherAgentGps"
 
@@ -2802,6 +2812,18 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="robot_resume",
     node=RobotResumeSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.vip_info",
+    group="habitat/task/lab_sensors",
+    name="vip_info",
+    node=VIPInfoSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.camera_info",
+    group="habitat/task/lab_sensors",
+    name="camera_info",
+    node=CameraInfoSensorConfig,
 )
 
 cs.store(

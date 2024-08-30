@@ -129,7 +129,15 @@ class HabitatEvaluator(Evaluator):
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
         ):
+            use_vip = False
             current_episodes_info = envs.current_episodes()
+
+            # If all prev_actions are zero, meaning this is the start of an episode
+            # Then collect the context of the episode
+            if use_vip:
+                vip_sim_info = envs.call(["get_vip_sim_info"] * envs.num_envs)
+            else:
+                vip_sim_info = {}
 
             space_lengths = {}
             n_agents = len(config.habitat.simulator.agents)
@@ -137,6 +145,11 @@ class HabitatEvaluator(Evaluator):
                 space_lengths = {
                     "index_len_recurrent_hidden_states": hidden_state_lens,
                     "index_len_prev_actions": action_space_lens,
+                }
+            else:
+                space_lengths = {
+                    "vip_sim_info": vip_sim_info,
+                    "use_vip": use_vip
                 }
             with inference_mode():
                 action_data = agent.actor_critic.act(
@@ -178,6 +191,10 @@ class HabitatEvaluator(Evaluator):
             observations, rewards_l, dones, infos = [
                 list(x) for x in zip(*outputs)
             ]
+            # TODO(zxz): add visual prompting to observation
+            if space_lengths['use_vip']:
+                observations[0]['visual_prompting'] = (agent.actor_critic.visual_prompting(observations, **space_lengths))
+
             # Note that `policy_infos` represents the information about the
             # action BEFORE `observations` (the action used to transition to
             # `observations`).

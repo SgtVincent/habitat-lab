@@ -43,7 +43,6 @@ class DidAgentsCollide(Measure):
         #         f"Sensor only supports 2 agents. Got {agent_ids=}"
         #     )
 
-        # TODO(zxz): here is episode done check!
         if not all(
             coll_name_matches(cp, agent_id)
             for cp in contact_points
