@@ -82,7 +82,7 @@ class PddlRobotState:
     place_at_angle_thresh: Optional[float] = None
     base_angle_noise: Optional[float] = None
     filter_colliding_states: Optional[bool] = None
-    #TODO(YCC): add keyword for detected objects
+    # add keyword for detected objects
     detected_object: Optional[PddlEntity] = None
 
     def get_place_at_pos_dist(self, sim_info) -> float:
@@ -107,6 +107,7 @@ class PddlRobotState:
     ) -> "PddlRobotState":
         self.holding = sub_dict.get(self.holding, self.holding)
         self.pos = sub_dict.get(self.pos, self.pos)
+        self.detected_object = sub_dict.get(self.detected_object, self.detected_object)
         return self
 
     def sub_in_clone(
@@ -115,6 +116,7 @@ class PddlRobotState:
         other = replace(self)
         other.holding = sub_dict.get(self.holding, self.holding)
         other.pos = sub_dict.get(self.pos, self.pos)
+        other.detected_object = sub_dict.get(self.detected_object, self.detected_object)
         return other
 
     def clone(self) -> "PddlRobotState":
@@ -144,26 +146,15 @@ class PddlRobotState:
         elif self.should_drop and grasp_mgr.snap_idx != None:
             return False
         
-         #TODO: add detected objects checking
-        if self.detected_object is not None:
-            # ename = self.detected_object.name
-            # rom = sim_info.sim.get_rigid_object_manager()
-            # idx = sim_info.obj_ids[ename]
-            # obj = rom.get_object_by_id(sim_info.sim.scene_obj_ids[idx])
+         # add detected objects checking
+        if isinstance(self.detected_object, PddlEntity):
             obj_idx = cast(int, sim_info.search_for_entity(self.detected_object))
+            # absolute object id = object id + semantic_offset
             abs_obj_id = sim_info.sim.scene_obj_ids[obj_idx] + sim_info.sim.habitat_config.object_ids_start
-            # abs_obj_id = sim_info.sim.scene_obj_ids[obj_idx]
 
             sim_obs = sim_info.sim.get_sensor_observations()
             observations = sim_info.sim.sensor_suite.get_observations(sim_obs)
-            # episode = sim_info.episode
-            # task = sim_info.env
-            # obs = sim_info.env.sensor_suite.get_observations(observations=observations, episode=episode, task=task)
-            # TODO(zxz): modify here for single agent
-            # assert (
-            #         f"agent_{robot_id}_detected_objects" in sim_info.env.sensor_suite.sensors
-            #         or f"detected_objects" in sim_info.env.sensor_suite.sensors
-            # ), f"agent_{robot_id}_detected_objects or detected_objects should be in the sensors"
+
             if f"agent_{robot_id}_detected_objects" in sim_info.env.sensor_suite.sensors:
                 obs = sim_info.env.sensor_suite.get(f"agent_{robot_id}_detected_objects").get_observation(observations)
             elif "detected_objects" in sim_info.env.sensor_suite.sensors:
@@ -229,6 +220,28 @@ class PddlRobotState:
             sim.internal_step(-1)
             agent_data.grasp_mgr.snap_to_obj(sim.scene_obj_ids[obj_idx])
             sim.internal_step(-1)
+
+        # set the robot near the object if detected_object is not None
+        if isinstance(self.detected_object, PddlEntity):
+            target_pos = sim_info.get_entity_pos(self.detected_object)
+
+            start_pos, start_rot, was_fail = place_agent_at_dist_from_pos(
+                target_position=target_pos,
+                rotation_perturbation_noise=self.get_base_angle_noise(
+                    sim_info
+                ),
+                distance_threshold=self.get_place_at_pos_dist(sim_info),
+                sim=sim,
+                num_spawn_attempts=sim_info.num_spawn_attempts,
+                filter_colliding_states=self.get_filter_colliding_states(
+                    sim_info
+                ),
+                agent=agent_data.articulated_agent,
+            )
+            agent_data.articulated_agent.base_pos = start_pos
+            agent_data.articulated_agent.base_rot = start_rot
+            if was_fail:
+                rearrange_logger.error("Failed to place the robot near the object.")
 
         # Set the robot starting position
         if isinstance(self.pos, PddlEntity):

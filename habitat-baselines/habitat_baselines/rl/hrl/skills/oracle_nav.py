@@ -137,7 +137,7 @@ class OracleNavPolicy(NnSkillPolicy):
             raise ValueError(
                 f"Cannot find matching entity for {search_target}"
             )
-        match_i = self._all_entities.index(target)
+        match_i = self._all_entities.index(target) + 1
 
         return OracleNavPolicy.OracleNavActionArgs(match_i)
 
