@@ -48,7 +48,7 @@ class OracleNavPolicy(NnSkillPolicy):
             batch_size,
         )
 
-        self._oracle_nav_ac_idx, _ = find_action_range(
+        self._oracle_nav_srt_idx, self._oracle_nav_end_idx = find_action_range(
             action_space, "oracle_nav_action"
         )
 
@@ -156,6 +156,7 @@ class OracleNavPolicy(NnSkillPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None,
     ):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
@@ -164,7 +165,13 @@ class OracleNavPolicy(NnSkillPolicy):
             [self._cur_skill_args[i].action_idx + 1 for i in cur_batch_idx]
         )
 
-        full_action[:, self._oracle_nav_ac_idx] = action_idxs
+        if new_action is not None:
+            full_action[0][self._oracle_nav_srt_idx:self._oracle_nav_end_idx] = torch.tensor(
+                [action_idxs, 1.0,
+                 new_action[0], new_action[1], new_action[2]])
+        else:
+            full_action[0][self._oracle_nav_srt_idx:self._oracle_nav_srt_idx+2] = torch.tensor(
+                [action_idxs, 0.0])
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
@@ -220,6 +227,7 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None,
     ):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device

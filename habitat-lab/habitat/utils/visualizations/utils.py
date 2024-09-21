@@ -241,7 +241,7 @@ def observations_to_image(observation: Dict, info: Dict,
     image_dir = config.habitat_baselines.image_dir
 
     for sensor_name in observation:
-        if len(observation[sensor_name].shape) > 1:
+        if len(observation[sensor_name].shape) > 2:
             obs_k = observation[sensor_name]
             if not isinstance(obs_k, np.ndarray):
                 obs_k = obs_k.cpu().numpy()
@@ -250,7 +250,8 @@ def observations_to_image(observation: Dict, info: Dict,
                 obs_k = obs_k.astype(np.uint8)
             if obs_k.shape[2] == 1:
                 obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
-            render_obs_images.append(obs_k)
+            if obs_k.shape[0] == 256 or obs_k.shape[0] == 512:
+                render_obs_images.append(obs_k)
 
             def hit_key_list(name, key_list):
                 for k in key_list:

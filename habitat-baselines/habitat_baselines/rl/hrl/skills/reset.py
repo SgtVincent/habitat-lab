@@ -119,6 +119,7 @@ class ResetArmSkill(NnSkillPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None,
     ):
         current_joint_pos = observations["joint"].cpu().numpy()
         if not self.is_init:

@@ -22,14 +22,11 @@ from habitat.tasks.rearrange.utils import (
 )
 from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 from habitat_sim.physics import MotionType
-from habitat.articulated_agents.robots import (
-    StretchRobot,
-)
 
 
 
 @registry.register_task_action
-class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
+class VIPPickAction(ArmEEAction, ArticulatedAgentAction):
     """
     Pick/drop action for the articulated_agent given the object/receptacle index.
     Uses inverse kinematics (requires pybullet) to apply end-effector position control for the articulated_agent's arm.
@@ -41,7 +38,7 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         self._task = task
         self._entities = self._task.pddl_problem.get_ordered_entities_list()
         self._prev_ep_id = None
-        # Agent not initialized 
+        # Agent not initialized
         # self._init_cord = self.cur_articulated_agent.ee_transform().translation
         self._hand_pose_iter = 0
         self.is_reset = False
@@ -65,14 +62,14 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
     #         .translation
     #     )
     #     return obj_pos
-    
+
     def _get_coord_for_pddl_idx(self, object_target_idx):
         pick_obj_entity = self._entities[int(object_target_idx)]
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
             pick_obj_entity
         )
         return obj_pos
-    
+
     def get_scene_index_obj(self, object_target_idx):
         pick_obj_entity = self._entities[int(object_target_idx)]
         entity_name = pick_obj_entity.name
@@ -154,7 +151,6 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         if self.cur_articulated_agent.sim_obj.motion_type == MotionType.KINEMATIC:
             self.cur_articulated_agent.arm_joint_pos = des_joint_pos
             self.cur_articulated_agent.fix_joint_values = des_joint_pos
-        self._sim.step_physics(1.0 / 60)
 
     def step(self, pick_action, **kwargs):
         object_pick_pddl_idx = pick_action[0]
@@ -186,8 +182,6 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
             # Only move the hand to object if has to drop or object is not grabbed
             translation_base = np.clip(translation_base, -1, 1)
             self._ee_ctrl_lim = 0.03
-            if isinstance(self.cur_articulated_agent, StretchRobot):
-                self._ee_ctrl_lim = 0.06
             translation_base *= self._ee_ctrl_lim
             self.set_desired_ee_pos(translation_base)
 
@@ -199,6 +193,15 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
                 self._sim.viz_ids["ee_target"] = self._sim.visualize_position(
                     global_pos, self._sim.viz_ids["ee_target"]
                 )
+
+            # TODO: should we add retracting action here?
+
+            # Grasp & Ungrasp when we are close to the target
+            # if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
+            #     self.cur_grasp_mgr.snap_to_obj(
+            #         self.get_scene_index_obj(object_pick_pddl_idx),
+            #     )
+            #     return self.ee_target
         else:
             self.is_reset = False
 
@@ -206,7 +209,7 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
 
 
 @registry.register_task_action
-class OraclePlaceAction(OraclePickAction):
+class VIPPlaceAction(VIPPickAction):
     """
     Pick/drop action for the articulated_agent given the object/receptacle index.
     Uses inverse kinematics (requires pybullet) to apply end-effector position control for the articulated_agent's arm.
@@ -233,6 +236,7 @@ class OraclePlaceAction(OraclePickAction):
         )
 
     def step(self, place_action, **kwargs):
+
         recep_place_pddl_idx = place_action[0]
         should_place = place_action[1]
         has_place_action = place_action[2]
@@ -261,8 +265,6 @@ class OraclePlaceAction(OraclePickAction):
             # or self.cur_grasp_mgr.snap_idx is None
             translation_base = np.clip(translation_base, -1, 1)
             self._ee_ctrl_lim = 0.03
-            if isinstance(self.cur_articulated_agent, StretchRobot):
-                self._ee_ctrl_lim = 0.06
             translation_base *= self._ee_ctrl_lim
             self.set_desired_ee_pos(translation_base)
 
@@ -274,6 +276,10 @@ class OraclePlaceAction(OraclePickAction):
                 self._sim.viz_ids["ee_target"] = self._sim.visualize_position(
                     global_pos, self._sim.viz_ids["ee_target"]
                 )
+
+            # Grasp & Ungrasp when we are close to the target
+            # if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
+            #     self.cur_grasp_mgr.desnap()
         else:
             self.is_reset = False
 
@@ -281,7 +287,7 @@ class OraclePlaceAction(OraclePickAction):
 
 
 @registry.register_task_action
-class StretchOraclePickAction(ArmRelPosKinematicReducedActionStretch, OraclePickAction):
+class StretchVIPPickAction(ArmRelPosKinematicReducedActionStretch, VIPPickAction):
     """
     Pick/drop action for the articulated_agent given the object/receptacle index.
     Uses inverse kinematics (requires pybullet) to apply end-effector position control for the articulated_agent's arm.
@@ -333,7 +339,6 @@ class StretchOraclePickAction(ArmRelPosKinematicReducedActionStretch, OraclePick
             # or self.cur_grasp_mgr.snap_idx is None
             cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
             if not self.is_reset:
-                self._sim.step_physics(1.0 / 60)
                 self.ee_target = self._ik_helper.calc_fk(self.cur_articulated_agent.arm_joint_pos)
                 self.is_reset = True
             translation = object_coord - cur_ee_pos

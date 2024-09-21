@@ -33,6 +33,7 @@ class NoopSkillPolicy(SkillPolicy):
         cur_batch_idx,
         full_action,
         deterministic=False,
+        new_action=None,
     ):
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states

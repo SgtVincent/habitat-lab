@@ -8,7 +8,7 @@ from gym import spaces
 from habitat.core.spaces import ActionSpace
 from habitat.tasks.rearrange.rearrange_sensors import (
     IsHoldingSensor,
-    ObjectToGoalDistanceSensor,
+    RelativeRestingPositionSensor,
 )
 from habitat_baselines.common.logging import baselines_logger
 from habitat_baselines.rl.hrl.skills.nn_skill import NnSkillPolicy
@@ -16,7 +16,7 @@ from habitat_baselines.rl.hrl.utils import find_action_range
 from habitat_baselines.rl.ppo.policy import PolicyActionData
 
 
-class OraclePickPolicy(NnSkillPolicy):
+class VIPPickPolicy(NnSkillPolicy):
     """
     Skill to generate a picking motion. Moves the arm next to an object,
     """
@@ -24,7 +24,7 @@ class OraclePickPolicy(NnSkillPolicy):
     PICK_ID = 1
 
     @dataclass
-    class OraclePickActionArgs:
+    class VIPPickActionArgs:
         """
         :property action_idx: The index of the oracle action we want to execute
         :property grab_release: Whether we want to grab (1) or drop an object (0)
@@ -43,7 +43,7 @@ class OraclePickPolicy(NnSkillPolicy):
         pddl_domain_path,
         pddl_task_path,
         task_config,
-    ): 
+    ):
         super().__init__(
             wrap_policy,
             config,
@@ -56,7 +56,7 @@ class OraclePickPolicy(NnSkillPolicy):
         action_name = "arm_pick_action"
         self._pick_srt_idx, self._pick_end_idx = find_action_range(action_space, action_name)
 
-    def set_pddl_problem(self, pddl_prob): 
+    def set_pddl_problem(self, pddl_prob):
         super().set_pddl_problem(pddl_prob)
         self._all_entities = self._pddl_problem.get_ordered_entities_list()
 
@@ -69,7 +69,7 @@ class OraclePickPolicy(NnSkillPolicy):
         rnn_hidden_states,
         prev_actions,
         skill_name,
-    ): 
+    ):
         self._is_target_obj = None
         self._targ_obj_idx = None
         self._prev_angle = {}
@@ -88,7 +88,7 @@ class OraclePickPolicy(NnSkillPolicy):
     @classmethod
     def from_config(
         cls, config, observation_space, action_space, batch_size, full_config
-    ):         
+    ):
         filtered_action_space = ActionSpace(
             {config.action_name: action_space[config.action_name]}
         )
@@ -109,7 +109,7 @@ class OraclePickPolicy(NnSkillPolicy):
             ),
             full_config.habitat.task,
         )
-        
+
     def _is_skill_done(
         self,
         observations,
@@ -118,10 +118,16 @@ class OraclePickPolicy(NnSkillPolicy):
         masks,
         batch_idx,
     ) -> torch.BoolTensor:
+        # Is the agent holding the object and is the end-effector at the
+        # resting position?
+        # rel_resting_pos = torch.linalg.vector_norm(
+        #     observations[RelativeRestingPositionSensor.cls_uuid], dim=-1
+        # )
+        # is_within_thresh = rel_resting_pos < self._config.at_resting_threshold
         is_holding = observations[IsHoldingSensor.cls_uuid].view(-1)
         return is_holding.type(torch.bool)
 
-    def _parse_skill_arg(self, skill_name: str, skill_arg): 
+    def _parse_skill_arg(self, skill_name: str, skill_arg):
         """
         Parses the object or container we should be picking or placing to.
         Uses the same parameters as oracle_nav.
@@ -145,7 +151,7 @@ class OraclePickPolicy(NnSkillPolicy):
             )
         match_i = self._all_entities.index(target)
 
-        return OraclePickPolicy.OraclePickActionArgs(match_i, self.PICK_ID)
+        return VIPPickPolicy.VIPPickActionArgs(match_i, self.PICK_ID)
 
     # @property
     # def required_obs_keys(self):
@@ -172,7 +178,6 @@ class OraclePickPolicy(NnSkillPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        # [pddl_id, #pick_tag, has_cord, [cords: 3], grip_tag(>=0: pick)]
         if new_action is not None:
             full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor(
                 [action_idxs, self.PICK_ID, 1.0,
@@ -180,29 +185,27 @@ class OraclePickPolicy(NnSkillPolicy):
         else:
             full_action[0][self._pick_srt_idx:self._pick_srt_idx+3] = torch.tensor(
                 [action_idxs, self.PICK_ID, 0.0])
-        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, self.PICK_ID])
-        full_action[0][self._pick_end_idx-1] = 1.0
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
-    
+
     def _get_coord_for_idx(self, object_target_idx):
         obj_entity = self._entities[object_target_idx]
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
             obj_entity
         )
         return obj_pos
-    
 
-class OraclePlacePolicy(OraclePickPolicy):
+
+class VIPPlacePolicy(VIPPickPolicy):
     """
     Skill to generate a placing motion. Moves the arm next to an object,
     """
 
     PLACE_ID = 2
     @dataclass
-    class OraclePlaceActionArgs:
+    class VIPPlaceActionArgs:
         """
         :property action_idx: The index of the oracle action we want to execute
         :property grab_release: Whether we want to grab (1) or drop an object (0)
@@ -270,15 +273,18 @@ class OraclePlacePolicy(OraclePickPolicy):
         masks,
         batch_idx,
     ) -> torch.BoolTensor:
-        rel_resting_pos = torch.linalg.vector_norm(
-            observations[ObjectToGoalDistanceSensor.cls_uuid], dim=-1
-        )
-        # TODO(zxz): need to change the done condition
-        return torch.tensor([rel_resting_pos < 0.02])
+        # Is the agent holding the object and is the end-effector at the
+        # resting position?
+        # rel_resting_pos = torch.linalg.vector_norm(
+        #     observations[RelativeRestingPositionSensor.cls_uuid], dim=-1
+        # )
+        # is_within_thresh = rel_resting_pos < self._config.at_resting_threshold
+        is_holding = observations[IsHoldingSensor.cls_uuid].view(-1)
+        return ~is_holding.type(torch.bool)
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
         if isinstance(skill_arg, dict):
-            search_target = skill_arg["target_location"]
+            search_target = skill_arg["target_obj"]
         elif len(skill_arg) == 2:
             search_target, _ = skill_arg
         elif len(skill_arg) == 3:
@@ -296,7 +302,7 @@ class OraclePlacePolicy(OraclePickPolicy):
         match_i = self._all_entities.index(target)
 
         # Since the recep_idx might be 0, we encode the id by plus 1
-        return OraclePlacePolicy.OraclePlaceActionArgs(
+        return VIPPlacePolicy.VIPPlaceActionArgs(
             match_i, self.RELEASE_ID
         )
 
@@ -317,7 +323,6 @@ class OraclePlacePolicy(OraclePickPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        # [pddl_id, #place_tag, has_cord, [cords: 3], grip_tag(<0: place)]
         if new_action is not None:
             full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor(
                 [action_idxs, self.PLACE_ID, 1.0,
@@ -325,10 +330,6 @@ class OraclePlacePolicy(OraclePickPolicy):
         else:
             full_action[0][self._place_srt_idx:self._place_srt_idx+3] = torch.tensor(
                 [action_idxs, self.PLACE_ID, 0.0])
-
-        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, self.PLACE_ID])
-        if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
-            full_action[0][self._place_end_idx-1] = -1.0
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states

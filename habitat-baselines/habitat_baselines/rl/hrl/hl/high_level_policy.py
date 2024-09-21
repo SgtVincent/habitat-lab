@@ -35,6 +35,8 @@ class HighLevelPolicy(nn.Module):
         self._agent_name = agent_name
         self._action_space = action_space
 
+        self.samples = None
+
     def to(self, device):
         self._device = device
         return super().to(device)

@@ -19,6 +19,7 @@ import numpy as np
 import habitat
 from habitat import Dataset
 from habitat.gym.gym_wrapper import HabGymWrapper
+from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -104,6 +105,16 @@ class RLTaskEnv(habitat.RLEnv):
             "Please implement this method in the task class."
         )
         return self._env.task.get_task_text_context()
+
+    def get_vip_sim_info(self) -> RearrangeSim:
+        """
+        Get the sim info of the task for vip.
+        """
+        assert hasattr(self._env.task, "get_vip_sim_info"), (
+            "The task does not have a get_vip_sim_info method. "
+            "Please implement this method in the task class."
+        )
+        return self._env.task.get_vip_sim_info()
 
 
 @habitat.registry.register_env(name="GymRegistryEnv")

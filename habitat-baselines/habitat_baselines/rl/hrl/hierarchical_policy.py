@@ -4,7 +4,7 @@
 
 import os.path as osp
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import gym.spaces as spaces
 import numpy as np
@@ -25,6 +25,7 @@ from habitat_baselines.rl.hrl.skills import NoopSkillPolicy, SkillPolicy
 from habitat_baselines.rl.hrl.utils import find_action_range
 from habitat_baselines.rl.ppo.policy import Policy, PolicyActionData
 from habitat_baselines.utils.common import get_num_actions
+from torch import BoolTensor, Tensor
 
 
 @baseline_registry.register_policy
@@ -306,7 +307,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         # Always call high-level if the episode is over.
         self._cur_call_high_level |= (~masks_cpu).view(-1)
 
-        hl_terminate_episode, hl_info = self._update_skills(
+        hl_terminate_episode, hl_info, new_action = self._update_skills(
             observations,
             hl_rnn_hidden_states,
             ll_rnn_hidden_states,
@@ -318,6 +319,11 @@ class HierarchicalPolicy(nn.Module, Policy):
             deterministic,
             **kwargs,
         )
+
+        # TODO(zxz): 设置更新sample的条件
+        # if self._cur_call_high_level.sum() <= 0 and kwargs['use_vip']:
+        #     new_action = self._update_samples(observations, **kwargs,)
+
         did_choose_new_skill = self._cur_call_high_level.clone()
         if hl_info.rnn_hidden_states is not None and self._has_hl_hidden_state:
             # Update the HL hidden state.
@@ -344,6 +350,7 @@ class HierarchicalPolicy(nn.Module, Policy):
                 prev_actions=batch_dat["prev_actions"],
                 masks=batch_dat["masks"],
                 cur_batch_idx=batch_ids,
+                new_action=new_action
             )
             actions[batch_ids] += action_data.actions
 
@@ -444,7 +451,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         should_choose_new_skill: torch.BoolTensor,
         deterministic: bool,
         **kwargs,
-    ) -> Tuple[torch.BoolTensor, PolicyActionData]:
+    ) -> tuple[Union[BoolTensor, Tensor], PolicyActionData, Any]:
         """
         Will potentially update the set of running skills according to the HL
         policy. This updates the active skill indices in `self._cur_skills` in
@@ -532,7 +539,27 @@ class HierarchicalPolicy(nn.Module, Policy):
         else:
             # We made no decisions, so return an empty HL action info.
             hl_info = PolicyActionData()
-        return hl_terminate_episode, hl_info
+        if self._high_level_policy.samples is None or len(self._high_level_policy.samples) == 0:
+            new_action = None
+        else:
+            new_action = self._high_level_policy.samples[0].action
+        return hl_terminate_episode, hl_info, new_action
+
+    def _update_samples(
+        self,
+        observations,
+        **kwargs,
+    ):
+        assert hasattr(self._high_level_policy, "get_new_sample"), (
+            "The task does not have a get_new_sample method. "
+            "Please implement this method in the high_level_policy class."
+        )
+        self._high_level_policy.get_new_sample(observations, **kwargs)
+        if self._high_level_policy.samples is None or len(self._high_level_policy.samples) == 0:
+            new_action = None
+        else:
+            new_action = self._high_level_policy.samples[0].action
+        return new_action
 
     def _get_terminations(
         self,
@@ -681,6 +708,8 @@ class HierarchicalPolicy(nn.Module, Policy):
             agent_name=agent_name,
         )
 
+    def visual_prompting(self, observations, **kwargs):
+        return self._high_level_policy.visual_prompting(observations, **kwargs)
 
 def _write_tensor_batched(
     source_tensor: torch.Tensor,

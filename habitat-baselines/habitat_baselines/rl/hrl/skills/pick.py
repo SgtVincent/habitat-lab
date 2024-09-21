@@ -52,6 +52,7 @@ class PickSkillPolicy(NnSkillPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None,
     ):
         action = super()._internal_act(
             observations,
