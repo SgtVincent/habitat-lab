@@ -39,15 +39,15 @@ ROBOT_RESUME_TEMPLATE = (
     '"""\n{capabilities}\n"""\n\n'
 )
 
-def create_leader_prompt(robot_resume):
 
+def create_leader_prompt(robot_resume):
     LEADER_SYSTEM_PROMPT_TEMPLATE = (
         "You are a group discussion leader."
         " Your have to discuss with real robots (agents) to break an overall"
         " task to smaller subtasks and assign a subtask to each agent."
         "The agents are described below:\n\n"
         '"""\n{robot_resume}\n"""\n\n'
-        )
+    )
     FORMAT_INSTRUCTION = (
         "You should assign subtasks to each agent based on their capabilities, following this format:\n\n"
         r"{robot_id||subtask_description}\n\n"
@@ -55,15 +55,16 @@ def create_leader_prompt(robot_resume):
         r"{agent_0||Navigate to targets_0}\n\n"
         "Remember you must include the brackets and you MUST include all the robots in your response.\n"
         'If you think a robot should not have a subtask, you can assign it "Nothing to do".\n'
-        'Remember the subtask target should always be objects and robots, not a region.\n'
+        "Remember the subtask target should always be objects and robots, not a region.\n"
     )
-    
-    return LEADER_SYSTEM_PROMPT_TEMPLATE.format(
-        robot_resume=robot_resume) + FORMAT_INSTRUCTION
+
+    return (
+        LEADER_SYSTEM_PROMPT_TEMPLATE.format(robot_resume=robot_resume)
+        + FORMAT_INSTRUCTION
+    )
 
 
 def create_leader_start_message(task_description, scene_description):
-
     LEADER_MESSAGE_TEMPLATE = (
         " The task is described below:\n\n"
         '"""\n{task_description}\n"""\n\n'
@@ -71,13 +72,13 @@ def create_leader_start_message(task_description, scene_description):
         '"""\n{scene_description}\n"""\n\n'
         "Now you should assign subtasks to each agent based on their capabilities, following the format in the system prompt."
     )
-    
+
     return LEADER_MESSAGE_TEMPLATE.format(
-        task_description=task_description, 
-        scene_description=scene_description) # + FORMAT_INSTRUCTION
+        task_description=task_description, scene_description=scene_description
+    )  # + FORMAT_INSTRUCTION
+
 
 def create_robot_prompt(robot_type, robot_key, capabilities):
-
     ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
         # 'You are a "{robot_type}" robot with id "{robot_id}".'
         'You are a "{robot_type}" agent called "{robot_key}".'
@@ -86,35 +87,39 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         # "The physics capabilities include its mobility, perception, and manipulation capabilities."
         ' You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
         " Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
-        ' You can generate python code to check if task is feasible numerically.'
-        ' If you are going to pick or place objects, please pay attention to the shape type of the robot workspace when your generate code to check if a location is within the 3D space bounded by the shape.'
-        ' If you are going to navigate in multi-floor environments, please pay attention to your mobility capabilities and floors.'
-        ' If you need to perceive objects, you only need to pay attention to the fov, height, horizontal dist, etc. when you generate code to check if a location in within vertical perception range.'
-        ' When considering manipulation task, you only need pay attention to center point, radius, bounding box, etc.'
-        ' Notably, ALL coordinates are in [x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.'
-        ' I will execute the code and give your the result to help you make decisions.'
+        " You can generate python code to check if task is feasible numerically."
+        " If you are going to pick or place objects, please pay attention to the shape type of the robot workspace when your generate code to check if a location is within the 3D space bounded by the shape."
+        " If you are going to navigate in multi-floor environments, please pay attention to your mobility capabilities and floors."
+        " If you need to perceive objects, you only need to pay attention to the fov, height, horizontal dist, etc. when you generate code to check if a location in within vertical perception range."
+        " When considering manipulation task, you only need pay attention to center point, radius, bounding box, etc."
+        " Notably, ALL coordinates are in [x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions."
+        " I will execute the code and give your the result to help you make decisions."
     )
     FORMAT_INSTRUCTION = (
-        r' Please put all your code in a single python code block wrapped within ```python and ```.'
+        r" Please put all your code in a single python code block wrapped within ```python and ```."
         r' You MUST print the varible with "<name>: <value>" format you want to know in the code.'
         r" Finally, if you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
         r' following this format: "{{no||<the reason>}}".'
         r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
         r" Example responses: {{yes}}, {{no||I have no moving ability}}, {{no||The object is out of my arm workspace}}."
     )
-    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
-        robot_type=robot_type,
-        robot_key=robot_key,
-        capabilities=capabilities) + FORMAT_INSTRUCTION
+    return (
+        ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+            robot_type=robot_type, robot_key=robot_key, capabilities=capabilities
+        )
+        + FORMAT_INSTRUCTION
+    )
 
-def create_robot_start_message(task_description, scene_description, compute_path: bool = False):
 
+def create_robot_start_message(
+    task_description, scene_description, compute_path: bool = False
+):
     ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE = (
         " Your task is to work with other agents to complete the assigned subtask described below:\n\n"
         '"""\n{task_description}\n"""\n\n'
         "The scene description is as follows:\n\n"
         '"""\n{scene_description}\n"""\n\n'
-        ' Notably, ALL coordinates are in[x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.'
+        " Notably, ALL coordinates are in[x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions."
     )
     COMPUTE_PATH = (
         "Please infer the navigation path based on the region descriptions and determine if the path requires crossing floors. "
@@ -124,8 +129,8 @@ def create_robot_start_message(task_description, scene_description, compute_path
         ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE += COMPUTE_PATH
 
     return ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE.format(
-        task_description=task_description, 
-        scene_description=scene_description)
+        task_description=task_description, scene_description=scene_description
+    )
 
 
 NO_MANIPULATION = "There are no explicit manipulation components"
@@ -159,6 +164,7 @@ def get_full_capabilities(robot: dict):
         manipulation = json.dumps(robot["manipulation"])
         capabilities += f" - Manipulation capability: {manipulation}\n"
     return capabilities
+
 
 def parse_leader_response(text):
     # Define the regular expression pattern
@@ -206,21 +212,106 @@ ROBOT_DESCRIPTION = {
     "DJIDrone": "Drone is a DJI M100 drone with an RGBD sensor for its model credit",
 }
 
+def agent_centric_discussion(
+    leader,
+    agents,
+    task_description,
+    scene_description,
+    should_agent_reflection,
+    max_discussion_rounds=3,
+) -> dict[str, str]:
+    pass
+
+def leader_centric_discussion(
+    leader,
+    agents,
+    task_description,
+    scene_description,
+    should_agent_reflection,
+    max_discussion_rounds=3,
+) -> dict[str, str]:
+    compute_path = "regions_description" in scene_description
+
+    leader_start_message = create_leader_start_message(
+        task_description=task_description, scene_description=scene_description
+    )
+
+    response = leader.chat(leader_start_message)
+    robot_tasks = parse_leader_response(response)
+    print("===============Task Description==============")
+    print(task_description)
+    print("===============Leader Response==============")
+    print(response)
+    print("===========================================")
+
+    agent_response = {}
+    if not should_agent_reflection:
+        return robot_tasks
+
+    for robot_id in robot_tasks:
+        robot_model = agents[robot_id]
+        robot_start_message = create_robot_start_message(
+            task_description=robot_tasks[robot_id],
+            scene_description=scene_description,
+            compute_path=compute_path,
+        )
+        response = robot_model.chat(robot_start_message)
+        agent_response[robot_id] = parse_agent_response(response)
+        print("===============Robot Response==============")
+        print(f"Robot {robot_id} response: {response}")
+        print("===========================================")
+
+    for _ in range(max_discussion_rounds):
+        all_yes = True
+        prompt = ""
+        for robot_id, (response, reason) in agent_response.items():
+            if response == "no":
+                prompt += f"Robot {robot_id} response: {response}, reason: {reason}\n"
+                all_yes = False
+        if all_yes:
+            return robot_tasks
+        prompt += "Please modify the task and reassign the subtasks."
+
+        response = leader.chat(prompt)
+        robot_tasks = parse_leader_response(response)
+
+        print("===============Leader Response==============")
+        print(response)
+        print("===========================================")
+        for robot_id in robot_tasks:
+            robot_model = agents[robot_id]
+            robot_start_message = create_robot_start_message(
+                task_description=robot_tasks[robot_id],
+                scene_description=scene_description,
+                compute_path=compute_path,
+            )
+            response = robot_model.chat(robot_start_message)
+            agent_response[robot_id] = parse_agent_response(response)
+            print("===============Robot Response==============")
+            print(f"Robot {robot_id} response: {response}")
+            print("===========================================")
+
+    return robot_tasks
+
 
 def group_discussion(
-    robot_resume: dict, scene_description: str, task_description: str, 
-    save_chat_history=True, save_chat_history_dir="", episode_id=-1, 
-    should_group_discussion: bool = True, should_agent_reflection: bool = True,
-    should_robot_resume: bool = True, should_numerical: bool = True
+    robot_resume: dict,
+    scene_description: str,
+    task_description: str,
+    save_chat_history=True,
+    save_chat_history_dir="",
+    episode_id=-1,
+    should_group_discussion: bool = True,
+    should_agent_reflection: bool = True,
+    should_robot_resume: bool = True,
+    should_numerical: bool = True,
 ) -> dict[str, AgentArguments]:
-
     if save_chat_history:
         episode_save_dir = os.path.join(save_chat_history_dir, str(episode_id))
         if not os.path.exists(episode_save_dir):
             os.makedirs(episode_save_dir)
 
     # Get robot resume from the beginning of the group discussion
-    compute_path = "regions_description" in scene_description
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
     capabilities_list = {}
@@ -236,16 +327,16 @@ def group_discussion(
             capabilities_list[robot_key] = get_text_capabilities(resume)
         # For EMOS benchmark without robot resume
         else:
-            capabilities_list[robot_key] = ROBOT_DESCRIPTION[resume['robot_type']]
+            capabilities_list[robot_key] = ROBOT_DESCRIPTION[resume["robot_type"]]
 
         robot_resume_prompt += ROBOT_RESUME_TEMPLATE.format(
             robot_key=robot_key,
             robot_type=resume["robot_type"],
-            capabilities=capabilities_list[robot_key]
+            capabilities=capabilities_list[robot_key],
         )
 
     if not should_group_discussion:
-        results = {}      
+        results = {}
         for robot_key in robot_resume:
             results[robot_key] = AgentArguments(
                 robot_id=robot_key,
@@ -254,9 +345,8 @@ def group_discussion(
                 subtask_description="",
                 chat_history=None,
             )
-        
+
         return results
-    
 
     leader_prompt = create_leader_prompt(robot_resume_prompt)
 
@@ -266,14 +356,14 @@ def group_discussion(
         discussion_stage=True,
         code_execution=False,
         enable_logging=save_chat_history,
-        logging_file = os.path.join(episode_save_dir, "leader_group_chat_history.json")            
+        logging_file=os.path.join(episode_save_dir, "leader_group_chat_history.json"),
     )
     agents: Dict[str, OpenAIModel] = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
             robot_resume[robot_key]["robot_type"],
             robot_key,
-            capabilities_list[robot_key]
+            capabilities_list[robot_key],
         )
         agents[robot_key] = OpenAIModel(
             robot_prompt,
@@ -281,53 +371,18 @@ def group_discussion(
             discussion_stage=True,
             code_execution=True,
             enable_logging=save_chat_history,
-            logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json")
+            logging_file=os.path.join(
+                episode_save_dir, f"{robot_key}_group_chat_history.json"
+            ),
         )
 
-    # robot_id_to_model_map = {
-    #     robot_resume[robot]["robot_id"]: agents[robot] for robot in robot_resume
-    # }
-    leader_start_message = create_leader_start_message(
-        task_description=task_description, 
-        scene_description=scene_description
+    robot_tasks = leader_centric_discussion(
+        leader,
+        agents,
+        task_description,
+        scene_description,
+        should_agent_reflection,
     )
-    response = leader.chat(leader_start_message)
-    robot_tasks = parse_leader_response(response)
-    print("===============Task Description==============")
-    print(task_description)
-    print("===============Leader Response==============")
-    print(response)
-    print("===========================================")
-    
-    agent_response = {} 
-    if should_agent_reflection:
-        for robot_id in robot_tasks:
-            robot_model = agents[robot_id]
-            robot_start_message = create_robot_start_message(
-                task_description=robot_tasks[robot_id],
-                scene_description=scene_description,
-                compute_path=compute_path,
-            )
-            response = robot_model.chat(robot_start_message)
-            agent_response[robot_id] = parse_agent_response(response)
-            print("===============Robot Response==============")
-            print(f"Robot {robot_id} response: {response}")
-            print("===========================================")
-
-        all_yes = True
-        prompt = ""
-        for robot_id, (response, reason) in agent_response.items():
-            if response == "no":
-                prompt += f"Robot {robot_id} response: {response}, reason: {reason}\n"
-                all_yes = False
-                break
-        if not all_yes:
-            prompt += "Please modify the task and reassign the subtasks."
-            response = leader.chat(prompt)
-            print("===============Leader Response==============")
-            print(response)
-            print("===========================================")
-            robot_tasks = parse_leader_response(response)
 
     results = {}
     for agent in agents:
@@ -392,7 +447,9 @@ class MultiLLMPolicy(MultiPolicy):
         # debug info
         # TODO: disable saving chat history for batch experiments
         save_chat_history = kwargs.get("save_chat_history", True)
-        save_chat_history_dir = kwargs.get("save_chat_history_dir", "./chat_history_output")
+        save_chat_history_dir = kwargs.get(
+            "save_chat_history_dir", "./chat_history_output"
+        )
         # Create a directory to save chat history
         if save_chat_history:
             # save dir format: chat_history_output/<date>/<config>/<episode_id>
@@ -400,11 +457,13 @@ class MultiLLMPolicy(MultiPolicy):
             hydra_cfg = HydraConfig.get()
             config_str = hydra_cfg.job.config_name.split("/")[-1].replace(".yaml", "")
             # episode_save_dir = os.path.join(save_chat_history_dir, date_str, config_str, str(episode_id))
-            save_chat_history_dir = os.path.join(save_chat_history_dir, date_str, config_str)
+            save_chat_history_dir = os.path.join(
+                save_chat_history_dir, date_str, config_str
+            )
 
             if not os.path.exists(save_chat_history_dir):
                 os.makedirs(save_chat_history_dir)
-            
+
         n_agents = len(self._active_policies)
         split_index_dict = self._build_index_split(
             rnn_hidden_states, prev_actions, kwargs
@@ -417,7 +476,9 @@ class MultiLLMPolicy(MultiPolicy):
         )
         agent_masks = masks.split([1] * n_agents, -1)
         n_envs = prev_actions.shape[0]
-        assert n_envs == 1, "Currently, the stage 2 only supports single environment with multiple agents."
+        assert (
+            n_envs == 1
+        ), "Currently, the stage 2 only supports single environment with multiple agents."
 
         text_goal = observations["pddl_text_goal"][0].tolist()
         text_goal = "".join([chr(code) for code in text_goal]).strip()
@@ -444,25 +505,24 @@ class MultiLLMPolicy(MultiPolicy):
                 # print("=============================================")
                 # print(text_goal)
                 # print("=============================================")
-                
+
                 agent_arguments = group_discussion(
-                    robot_resume, 
-                    scene_description, 
-                    text_goal, 
-                    should_group_discussion=self.should_group_discussion, 
+                    robot_resume,
+                    scene_description,
+                    text_goal,
+                    should_group_discussion=self.should_group_discussion,
                     should_agent_reflection=self.should_agent_reflection,
-                    should_robot_resume=self.should_robot_resume, 
+                    should_robot_resume=self.should_robot_resume,
                     should_numerical=self.should_numerical,
                     save_chat_history=save_chat_history,
                     save_chat_history_dir=save_chat_history_dir,
                     episode_id=episode_id,
                 )
                 envs_agent_arguments.append(agent_arguments)
-                
+
                 # Invalidate all action policies and flag them to be reinitialized
                 for agent_i, policy in enumerate(self._active_policies):
                     policy._high_level_policy.llm_agent.initilized = False
-                    
 
         # Stage 2: Individual policy actions
         agent_actions = []
@@ -486,8 +546,10 @@ class MultiLLMPolicy(MultiPolicy):
                 print(args)
                 episode_id = envs_text_context[0]["episode_id"]
                 episode_save_dir = os.path.join(save_chat_history_dir, str(episode_id))
-                logging_path = os.path.join(episode_save_dir, f"{agent_i_handle}_action_history.json")
-                
+                logging_path = os.path.join(
+                    episode_save_dir, f"{agent_i_handle}_action_history.json"
+                )
+
                 llm_policy.llm_agent.init_agent(
                     robot_type=args.robot_type,
                     task_description=args.task_description,
@@ -513,7 +575,7 @@ class MultiLLMPolicy(MultiPolicy):
         if self.should_terminate_on_wait:
             should_terminate = True
             for agent_id, agent_action in enumerate(agent_actions):
-                wait_id = self._active_policies[agent_id]._name_to_idx['wait']
+                wait_id = self._active_policies[agent_id]._name_to_idx["wait"]
                 if agent_action.skill_id != wait_id:
                     should_terminate = False
                     break
@@ -524,9 +586,7 @@ class MultiLLMPolicy(MultiPolicy):
                 for agent_i, policy in enumerate(self._active_policies):
                     agent_actions[agent_i].actions[i, policy._stop_action_idx] = 1.0
 
-        policy_info = _merge_list_dict(
-            [ac.policy_info for ac in agent_actions]
-        )
+        policy_info = _merge_list_dict([ac.policy_info for ac in agent_actions])
         batch_size = masks.shape[0]
         device = masks.device
 
@@ -704,9 +764,15 @@ class MultiLLMPolicy(MultiPolicy):
         update_obs_with_agent_prefix_fn: Optional[Callable] = None,
         **kwargs,
     ):
-        kwargs["should_terminate_on_wait"] = config.habitat.dataset.should_terminate_on_wait
-        kwargs["should_group_discussion"] = config.habitat.dataset.should_group_discussion
-        kwargs["should_agent_reflection"] = config.habitat.dataset.should_agent_reflection
+        kwargs["should_terminate_on_wait"] = (
+            config.habitat.dataset.should_terminate_on_wait
+        )
+        kwargs["should_group_discussion"] = (
+            config.habitat.dataset.should_group_discussion
+        )
+        kwargs["should_agent_reflection"] = (
+            config.habitat.dataset.should_agent_reflection
+        )
         kwargs["should_robot_resume"] = config.habitat.dataset.should_robot_resume
         kwargs["should_numerical"] = config.habitat.dataset.should_numerical
 
